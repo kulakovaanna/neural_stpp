@@ -1,0 +1,13 @@
+Cython==3.0.9
+matplotlib==3.7.1
+numpy==1.25.0
+pandas==2.2.2
+psutil==5.9.8
+pydicom==2.4.4
+reverse_geocoder==1.5.1
+scipy==1.13.0
+setuptools==59.6.0
+tqdm==4.66.2
+torch==2.0.1
+torchdiffeq==0.2.3
+scikit_learn==1.4.1.post1
