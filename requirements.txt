@@ -11,3 +11,4 @@ tqdm==4.66.2
 torch==2.0.1
 torchdiffeq==0.2.3
 scikit_learn==1.4.1.post1
+plotly
