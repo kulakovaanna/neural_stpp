@@ -102,24 +102,44 @@ class CovidNJ(SpatioTemporalDataset):
 
 class Earthquakes(SpatioTemporalDataset):
 
-    def __init__(self, split="train"):
+    def __init__(self, dataset_path, split="train", paper_split=False):
         assert split in ["train", "val", "test"]
         self.split = split
-        dataset = np.load("data/earthquakes/earthquakes_jp.npz")
-        exclude_from_train = (dataset.files[::30] + dataset.files[1::30] + dataset.files[2::30] + dataset.files[3::30]
-                              + dataset.files[4::30] + dataset.files[5::30] + dataset.files[6::30] + dataset.files[7::30]
-                              + dataset.files[8::30] + dataset.files[9::30] + dataset.files[10::30])
-        val_files = dataset.files[3::30]
-        test_files = dataset.files[7::30]
+        dataset = np.load(dataset_path)
+        
+        if paper_split:
+            # version from original paper
+            exclude_from_train = (dataset.files[::30] + dataset.files[1::30] + dataset.files[2::30] + dataset.files[3::30]
+                                + dataset.files[4::30] + dataset.files[5::30] + dataset.files[6::30] + dataset.files[7::30]
+                                + dataset.files[8::30] + dataset.files[9::30] + dataset.files[10::30])
+            val_files = dataset.files[3::30]
+            test_files = dataset.files[7::30]
+        else:
+            # corrected
+            exclude_from_train = (
+                dataset.files[::30] + dataset.files[1::30] + dataset.files[2::30] + dataset.files[3::30]
+                + dataset.files[4::30] + dataset.files[5::30] + dataset.files[6::30] + dataset.files[7::30]
+                + dataset.files[8::30] + dataset.files[9::30] + dataset.files[10::30] + dataset.files[11::30]
+                + dataset.files[12::30] + dataset.files[13::30]
+            )
+            val_files = dataset.files[34::30]
+            test_files = dataset.files[39::30]
+
         train_files = set(dataset.files).difference(exclude_from_train)
-        file_splits = {"train": train_files, "val": val_files, "test": test_files}
+
+        # drop sequences with zero length
+        train_files = [f for f in train_files if len(dataset[f]) > 0]
+        test_files = [f for f in test_files if len(dataset[f]) > 0]
+        val_files = [f for f in val_files if len(dataset[f]) > 0]
+
+        self.file_splits = {"train": train_files, "val": val_files, "test": test_files}
         train_set = [dataset[f] for f in train_files]
-        split_set = [dataset[f] for f in file_splits[split]]
+        split_set = [dataset[f] for f in self.file_splits[split]]
+        
         super().__init__(train_set, split_set, split == "train")
 
     def extra_repr(self):
         return f"Split: {self.split}"
-
 
 class BOLD5000(SpatioTemporalDataset):
 

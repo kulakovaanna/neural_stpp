@@ -89,6 +89,14 @@ def get_t0_t1(data):
         return torch.tensor([0.0]), torch.tensor([7.0])
     elif data == "earthquakes_jp":
         return torch.tensor([0.0]), torch.tensor([30.0])
+    elif data == "earthquakes_orig_magn_3_5":
+        return torch.tensor([0.0]), torch.tensor([30.0])
+    elif data == "earthquakes_without_aft_magn_3_5":
+        return torch.tensor([0.0]), torch.tensor([30.0])
+    elif data == "earthquakes_orig_magn_6":
+        return torch.tensor([0.0]), torch.tensor([30.0])
+    elif data == "earthquakes_without_aft_magn_6":
+        return torch.tensor([0.0]), torch.tensor([30.0])
     elif data == "pinwheel":
         return torch.tensor([0.0]), torch.tensor([toy_datasets.END_TIME])
     elif data == "gmm":

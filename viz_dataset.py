@@ -17,6 +17,10 @@ BBOXES = {
     "citibike": (-74.03, -73.87, 40.65, 40.87),
     "covid_nj_cases": (-75.60, -73.90, 38.90, 41.20),
     "earthquakes_jp": (123.43, 149.18, 25.41, 45.98),
+    "earthquakes_orig_magn_3_5": (123.43, 149.18, 25.41, 45.98),
+    "earthquakes_without_aft_magn_3_5": (123.43, 149.18, 25.41, 45.98),
+    "earthquakes_orig_magn_6": (123.43, 149.18, 25.41, 45.98),
+    "earthquakes_without_aft_magn_6": (123.43, 149.18, 25.41, 45.98),
     "pinwheel": (-4.0, 4.0, -4.0, 4.0),
     "fmri": (0.0, 106.0, 0.0, 106.0),
 }
@@ -25,6 +29,10 @@ MAPS = {
     "citibike": "assets/manhattan_map.png",
     "covid_nj_cases": "assets/nj_map.png",
     "earthquakes_jp": "assets/jp_map.png",
+    "earthquakes_orig_magn_3_5": "assets/jp_map.png", 
+    "earthquakes_without_aft_magn_3_5": "assets/jp_map.png",
+    "earthquakes_orig_magn_6": "assets/jp_map.png", 
+    "earthquakes_without_aft_magn_6": "assets/jp_map.png",
     "pinwheel": None,
     "fmri": None,
     "gmm": None,
@@ -152,14 +160,16 @@ def plot_intensities(list_of_event_times, list_of_intensities, list_of_timevals,
     plt.close()
 
 
-def load_data(data, split="train"):
+def load_data(data, split="train", earthquakes_paper_split=False):
 
     if data == "citibike":
         return datasets.Citibike(split=split)
     elif data == "covid_nj_cases":
         return datasets.CovidNJ(split=split)
-    elif data == "earthquakes_jp":
-        return datasets.Earthquakes(split=split)
+    elif "earthquakes" in data:
+        dataset_path = f"data/earthquakes/{data}.npz"
+        print(f"dataset_path: {dataset_path}")
+        return datasets.Earthquakes(split=split, dataset_path=dataset_path, paper_split=earthquakes_paper_split)
     elif data == "pinwheel":
         return toy_datasets.PinwheelHawkes(split=split)
     elif data == "gmm":
