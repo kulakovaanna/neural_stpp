@@ -1,20 +1,13 @@
-import psutil
 import argparse
-import itertools
-import datetime
-import math
 import numpy as np
 import os
 import sys
 import time
 
 import torch
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.tensorboard import SummaryWriter
-
 import datasets
+import matplotlib.pyplot as plt
+from matplotlib import patheffects
 from iterators import EpochBatchIterator
 from models import CombinedSpatiotemporalModel, JumpCNFSpatiotemporalModel, SelfAttentiveCNFSpatiotemporalModel, JumpGMMSpatiotemporalModel
 from models.spatial import GaussianMixtureSpatialModel, IndependentCNF, JumpCNF, SelfAttentiveCNF
@@ -35,7 +28,7 @@ DPI = 300
 SAVEPATH = "/home/a.kylakova/mipt/nir/neural_stpp/data_maps"
 EXP = True
 
-def plot_density_show2(loglik_fn, spatial_locations, index, S_mean, S_std, savepath, dataset_name, device, text=None, fp64=False, N=50, model_name="model", exp=EXP):
+def plot_density(loglik_fn, spatial_locations, S_mean, S_std, dataset_name, device, text=None, fp64=False, N=50, model_name="model", exp=EXP):
 
     x = np.linspace(BBOXES[dataset_name][0], BBOXES[dataset_name][1], N)
     y = np.linspace(BBOXES[dataset_name][2], BBOXES[dataset_name][3], N)
@@ -77,14 +70,12 @@ def plot_density_show2(loglik_fn, spatial_locations, index, S_mean, S_std, savep
                       transform=ax.transAxes,
                       size=16,
                       color='white')
-        txt.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='black')])
+        txt.set_path_effects([patheffects.withStroke(linewidth=5, foreground='black')])
 
     plt.axis('off')
     os.makedirs(os.path.join(SAVEPATH), exist_ok=True)
-    # np.savez(f"{SAVEPATH}/data_{model_name}.npz", **{"X": X, "Y": Y, "Z": Z, "spatial_locations": spatial_locations})
     plt.savefig(os.path.join(SAVEPATH, f"density_{model_name}.png"), bbox_inches='tight', dpi=DPI)
     plt.close()
-    # plt.show()
     
     return X, Y, Z
 
@@ -223,48 +214,39 @@ def plot_main(args):
     train_date_sequence_dict = dict(zip(train_set.file_splits["train"], train_set))
     train_date = np.sort(list(train_date_sequence_dict.keys()))[1]
 
-    print(f"train_date: {train_date}, {train_date_sequence_dict[train_date].shape}")
+    with torch.no_grad():
+        sequence = train_date_sequence_dict[train_date].to(device)
+        
+        print(f"train_date: {train_date}, {train_date_sequence_dict[train_date].shape}")
+        print(f"args.data: {args_data}, sequence.shape: {sequence.shape}, len(train_set): {len(train_set)}")
 
-    sequence = train_date_sequence_dict[train_date].to(device)
+        torch.cuda.empty_cache()
 
-    print(f"args.data: {args_data}, sequence.shape: {sequence.shape}, len(train_set): {len(train_set)}")
+        model_logprob_fn = model.spatial_conditional_logprob_fn(
+            t=torch.tensor(60., device=device), 
+            event_times=sequence[:, 0], 
+            spatial_locations=sequence[:, 1:3], 
+            t0=t0, 
+            t1=t1,
+            # aux_state=None
+        )
 
-    # model_logprob_fn = model.spatial_conditional_logprob_fn(
-    #     t=torch.tensor(31., device=device), 
-    #     event_times=sequence[:, 0], 
-    #     spatial_locations=sequence[:, 1:3], 
-    #     t0=t0, 
-    #     t1=t1,
-    #     # aux_state=None
-    # )
-
-    torch.cuda.empty_cache()
-
-    model_logprob_fn = model.spatial_conditional_logprob_fn(
-        t=torch.tensor(60., device=device), 
-        event_times=sequence[:, 0], 
-        spatial_locations=sequence[:, 1:3], 
-        t0=t0, 
-        t1=t1,
-        # aux_state=None
-    )
-
-    print("density map", end=" ")
-    x, y, p = plot_density_show2(
-        loglik_fn=model_logprob_fn, 
-        spatial_locations=sequence[:, 1:3].cpu(), 
-        index="", 
-        S_mean=train_set.S_mean.cpu(), 
-        S_std=train_set.S_std.cpu(), 
-        savepath="", 
-        dataset_name="earthquakes_orig_magn_3_5", 
-        device=device, 
-        text=None, 
-        fp64=False,
-        model_name=args.model_name,
-        N=args.num
-    )
-    print("saved")
+        print("density map", end=" ")
+        x, y, p = plot_density(
+            loglik_fn=model_logprob_fn, 
+            spatial_locations=sequence[:, 1:3].cpu(), 
+            index="", 
+            S_mean=train_set.S_mean.cpu(), 
+            S_std=train_set.S_std.cpu(), 
+            savepath="", 
+            dataset_name="earthquakes_orig_magn_3_5", 
+            device=device, 
+            text=None, 
+            fp64=False,
+            model_name=args.model_name,
+            N=args.num
+        )
+        print("saved")
 
 if __name__ == "__main__":
 
